@@ -41,10 +41,10 @@ jobs:
       - name: Save images
         run: |
           images=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -v "<none>" | head -10 | sort -u)
-          while IFS= read -r image; do
+          for image in $images; do
             echo "Exporting image '$image'"
             docker save $image -o $image.tar
-          done <<< "$unique_images"
+          done
 
       - uses: actions/upload-artifact@v4
         with:
@@ -74,12 +74,11 @@ jobs:
       - name: Tag & Push produced images
         run: |
           images=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -v "<none>" | head -10 | sort -u)
-
-          while IFS= read -r image; do
+          for image in $images; do
             [[ -z "$image" ]] && continue
             new_tag="ghcr.io/${{ github.repository_owner }}/openebs/$image"
             echo "Pushing image '$image' to '$new_tag'"
             docker tag $image $new_tag
             docker push $new_tag
             echo "Pushed '$new_tag'"
-          done <<< "$unique_images"
+          done
