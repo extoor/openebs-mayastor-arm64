@@ -49,7 +49,7 @@ jobs:
         id: push-images
         run: |
           images=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -v "<none>" | sort -u | tr '\n' ' ')
-          echo "images=$images" >> "$GITHUB_OUTPUT"
+          echo "images='$images'" >> "$GITHUB_OUTPUT"
           mkdir -p openebs
           for image in $images; do
             [[ "${{ matrix.runner }}" == *-arm ]] && arch="arm64" || arch="amd64"
@@ -73,7 +73,9 @@ jobs:
 
       - name: Pull, merge & push images
         run: |
-          for image in ${{ needs.build.outputs.images }}; do
+          # For some reason gh doesn't like the space delimted images string
+          # So we pass it as a literal and echo it so that bash can iterate over it
+          for image in $(echo ${{ needs.build.outputs.images }}); do
             echo "Merging image '$image'"
             docker pull "ghcr.io/${{ github.repository_owner }}/$image-amd64"
             docker pull "ghcr.io/${{ github.repository_owner }}/$image-arm64"
