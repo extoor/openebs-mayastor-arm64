@@ -36,7 +36,7 @@ jobs:
       matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
     runs-on: ${{ matrix.runner }}
     outputs:
-      ${{ matrix.repo }}-images: ${{ steps.push-images.outputs.images }}
+      ${{ strategy.job-index }}-images: ${{ steps.push-images.outputs.images }}
     steps:
       - uses: actions/checkout@v4
         with:
