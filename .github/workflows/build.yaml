@@ -70,7 +70,7 @@ jobs:
 
       - name: Import built images
         run: |
-          for image in $(ls *.tar); do
+          for image in $(ls *.tar openebs/*.tar); do
             docker import $image
           done
 
@@ -79,7 +79,7 @@ jobs:
           images=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -v "<none>" | head -10 | sort -u)
           for image in $images; do
             [[ -z "$image" ]] && continue
-            new_tag="ghcr.io/${{ github.repository_owner }}/openebs/$image"
+            new_tag="ghcr.io/${{ github.repository_owner }}/$image"
             echo "Pushing image '$image' to '$new_tag'"
             docker tag $image $new_tag
             docker push $new_tag
