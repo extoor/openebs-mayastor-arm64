@@ -42,6 +42,7 @@ jobs:
         run: |
           images=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -v "<none>" | head -10 | sort -u)
           while IFS= read -r image; do
+            echo "Exporting image '$image'"
             docker save $image -o $image.tar
           done <<< "$unique_images"
 
