@@ -13,6 +13,7 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
+      # TODO: Also add the `mayastor` repo
       matrix: |
         {
           "runner":[
@@ -20,7 +21,6 @@ jobs:
             "ubuntu-24.04-arm"
           ],
           "repo":[
-            "mayastor",
             "mayastor-extensions",
             "mayastor-control-plane"
           ]
@@ -76,14 +76,14 @@ jobs:
             docker push $new_tag
 
             # Store the base image name for later merging
-            echo "$image" >> artifacts/images-${{ matrix.repo }}-$arch.txt
+            echo "$image" >> artifacts/images-${{ matrix.repo }}-${arch}.txt
           done
 
       - name: Upload image list artifact
         uses: actions/upload-artifact@v4
         with:
           name: images-${{ matrix.repo }}-${{ matrix.runner == 'ubuntu-24.04-arm' && 'arm64' || 'amd64' }}
-          path: artifacts/images-*.txt
+          path: artifacts/images-${{ matrix.repo }}-${{ matrix.runner == 'ubuntu-24.04-arm' && 'arm64' || 'amd64' }}.txt
 
   merge:
     permissions:
