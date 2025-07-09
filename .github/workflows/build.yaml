@@ -73,7 +73,7 @@ jobs:
 
       - name: Pull, merge & push images
         run: |
-          for image in {{ needs.build.outputs.images }}; do
+          for image in ${{ needs.build.outputs.images }}; do
             echo "Merging image '$image'"
             docker pull "ghcr.io/${{ github.repository_owner }}/$image-amd64"
             docker pull "ghcr.io/${{ github.repository_owner }}/$image-arm64"
