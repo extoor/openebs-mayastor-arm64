@@ -70,7 +70,7 @@ jobs:
 
       - name: Import built images
         run: |
-          for image in $(ls *.tar openebs/*.tar); do
+          for image in $(ls openebs/); do
             docker import $image
           done
 
