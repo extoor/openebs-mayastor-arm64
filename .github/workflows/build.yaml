@@ -9,25 +9,38 @@ on:
         description: The https://github.com/openebs/mayastor-extensions git tag to pull & build
 
 jobs:
+  # We need to be able to iterate over the matrix so we set it up on a fake job
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: |
+        {
+          "runner":[
+            "ubuntu-24.04",
+            "ubuntu-24.04-arm"
+          ],
+          "repo":[
+            "mayastor",
+            "mayastor-extensions",
+            "mayastor-control-plane"
+          ]
+        }
+    steps:
+      - run: echo "Matrix setup complete"  # This step is required
+
   build:
     permissions:
       packages: write
+    needs: [setup]
     strategy:
-      matrix:
-        runner:
-          - ubuntu-24.04
-          - ubuntu-24.04-arm
-        repo:
-          - openebs/mayastor
-          - openebs/mayastor-extensions
-          - openebs/mayastor-control-plane
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
     runs-on: ${{ matrix.runner }}
     outputs:
-      images: ${{ steps.push-images.outputs.images }}
+      images-${{ matrix.repo }}: ${{ steps.push-images.outputs.images }}
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: ${{ matrix.repo }}
+          repository: openebs/${{ matrix.repo }}
           ref: ${{ inputs.tag }}
           submodules: 'recursive'
           fetch-depth: 0
@@ -66,7 +79,9 @@ jobs:
     permissions:
       packages: write
     runs-on: ubuntu-latest
-    needs: [build]
+    needs:
+      - setup
+      - build
     steps:
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -77,15 +92,22 @@ jobs:
 
       - name: Pull, merge & push images
         run: |
-          # For some reason gh doesn't like the space delimted images string
-          # So we pass it as a literal and echo it so that bash can iterate over it
-          images=$(echo ${{ needs.build.outputs.images }} | tr ' ' '\n' | sort -u)
-          for image in $images; do
-            echo "Merging image '$image'"
-            docker pull "ghcr.io/${{ github.repository_owner }}/$image-amd64"
-            docker pull "ghcr.io/${{ github.repository_owner }}/$image-arm64"
-            docker manifest create "ghcr.io/${{ github.repository_owner }}/$image" \
-              --amend "ghcr.io/${{ github.repository_owner }}/$image-amd64" \
-              --amend "ghcr.io/${{ github.repository_owner }}/$image-arm64"
-            docker manifest push "ghcr.io/${{ github.repository_owner }}/$image"
+          repos=$(echo '${{ needs.setup.outputs.matrix }}' | jq -r '.repo[]')
+
+          for repo in $repos; do
+            echo "Working on repo '$repo'"
+            repoKey="images-$repo"
+
+            # For some reason gh doesn't like the space delimted images string
+            # So we pass it as a literal and echo it so that bash can iterate over it
+            images=$(echo ${{ needs.build.outputs[repoKey] }} | tr ' ' '\n' | sort -u)
+            for image in $images; do
+              echo "Merging image '$image'"
+              docker pull "ghcr.io/${{ github.repository_owner }}/$image-amd64"
+              docker pull "ghcr.io/${{ github.repository_owner }}/$image-arm64"
+              docker manifest create "ghcr.io/${{ github.repository_owner }}/$image" \
+                --amend "ghcr.io/${{ github.repository_owner }}/$image-amd64" \
+                --amend "ghcr.io/${{ github.repository_owner }}/$image-arm64"
+              docker manifest push "ghcr.io/${{ github.repository_owner }}/$image"
+            done
           done
