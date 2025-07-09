@@ -79,6 +79,9 @@ jobs:
     permissions:
       packages: write
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        repo: ${{ fromJson(needs.setup.outputs.matrix).repo }}
     needs:
       - setup
       - build
@@ -92,22 +95,15 @@ jobs:
 
       - name: Pull, merge & push images
         run: |
-          repos=$(echo '${{ needs.setup.outputs.matrix }}' | jq -r '.repo[]')
-
-          for repo in $repos; do
-            echo "Working on repo '$repo'"
-            repoKey="images-$repo"
-
-            # For some reason gh doesn't like the space delimted images string
-            # So we pass it as a literal and echo it so that bash can iterate over it
-            images=$(echo ${{ needs.build.outputs[repoKey] }} | tr ' ' '\n' | sort -u)
-            for image in $images; do
-              echo "Merging image '$image'"
-              docker pull "ghcr.io/${{ github.repository_owner }}/$image-amd64"
-              docker pull "ghcr.io/${{ github.repository_owner }}/$image-arm64"
-              docker manifest create "ghcr.io/${{ github.repository_owner }}/$image" \
-                --amend "ghcr.io/${{ github.repository_owner }}/$image-amd64" \
-                --amend "ghcr.io/${{ github.repository_owner }}/$image-arm64"
-              docker manifest push "ghcr.io/${{ github.repository_owner }}/$image"
-            done
+          # For some reason gh doesn't like the space delimted images string
+          # So we pass it as a literal and echo it so that bash can iterate over it
+          images=$(echo ${{ needs.build.outputs[format('images-{0}', matrix.repo)] }} | tr ' ' '\n' | sort -u)
+          for image in $images; do
+            echo "Merging image '$image'"
+            docker pull "ghcr.io/${{ github.repository_owner }}/$image-amd64"
+            docker pull "ghcr.io/${{ github.repository_owner }}/$image-arm64"
+            docker manifest create "ghcr.io/${{ github.repository_owner }}/$image" \
+              --amend "ghcr.io/${{ github.repository_owner }}/$image-amd64" \
+              --amend "ghcr.io/${{ github.repository_owner }}/$image-arm64"
+            docker manifest push "ghcr.io/${{ github.repository_owner }}/$image"
           done
