@@ -82,5 +82,5 @@ jobs:
             docker manifest create "ghcr.io/${{ github.repository_owner }}/$image" \
               --amend "ghcr.io/${{ github.repository_owner }}/$image-amd64" \
               --amend "ghcr.io/${{ github.repository_owner }}/$image-arm64"
-            docker push "ghcr.io/${{ github.repository_owner }}/$image"
+            docker manifest push "ghcr.io/${{ github.repository_owner }}/$image"
           done
