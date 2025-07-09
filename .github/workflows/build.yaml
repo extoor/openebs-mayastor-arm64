@@ -48,8 +48,8 @@ jobs:
       - name: Push single-arch images
         id: push-images
         run: |
-          images=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -v "<none>" | head -10 | sort -u)
-          echo "images=$images" >> "$GITHUB_OUTPUT"
+          images=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -v "<none>" | sort -u | tr '\n' ' ')
+          echo "images='$images'" >> "$GITHUB_OUTPUT"
           mkdir -p openebs
           for image in $images; do
             [[ "${{ matrix.runner }}" == *-arm ]] && arch="arm64" || arch="amd64"
