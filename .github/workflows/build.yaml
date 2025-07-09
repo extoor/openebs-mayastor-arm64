@@ -5,12 +5,21 @@ on:
     inputs:
       tag:
         required: true
-        default: "2.9.1"
+        default: "v2.9.1"
         description: The https://github.com/openebs/mayastor-extensions git tag to pull & build
 
 jobs:
-  docker:
-    runs-on: ubuntu-24.04-arm
+  build:
+    permissions:
+      packages: write
+    strategy:
+      matrix:
+        runner:
+          - ubuntu-24.04
+          - ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    outputs:
+      images: ${{ steps.get-images.outputs.images }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,3 +37,40 @@ jobs:
       - uses: cachix/install-nix-action@v31.3.0
       - name: Build and push the release images
         run: ./scripts/release.sh --skip-publish
+
+      - name: Get built images
+        id: get-images
+        run: |
+          images=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -v "<none>" | head -10)
+          echo "images<<EOF" >> $GITHUB_OUTPUT
+          echo "$images" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+  push-multiarch:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Import & Push produced images
+        run: |
+          images="${{ needs.build.outputs.images }}"
+
+          # Extract unique image:tag combinations
+          unique_images=$(echo "$images" | head -n $(echo "$images" | wc -l | awk '{print $1/2}'))
+
+          while IFS= read -r image; do
+            [[ -z "$image" ]] && continue
+            image_name=$(echo $image | cut -d':' -f1)
+            image_tag=$(echo $image | cut -d':' -f2)
+
+            ghcr_base="ghcr.io/${{ github.repository_owner }}/openebs/${image_name##*/}:${image_tag}"
+
+            docker manifest create ${ghcr_base}
+            docker manifest push ${ghcr_base}
+          done <<< "$unique_images"
