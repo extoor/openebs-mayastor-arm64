@@ -19,18 +19,33 @@ are needed to achieve the following:
 Required values for the openebs helm chart:
 
 ```yaml
+nodeSelector: {}
+image:
+  registry: ghcr.io/dzervas
+
+csi:
+  image:
+    registry: ghcr.io/dzervas
+
 mayastor:
   nodeSelector: {}
+  image:
+    registry: ghcr.io/dzervas
   io_engine:
     nodeSelector:
       # Keep only the engine nodeSelector and get rid of the arch
       "openebs.io/engine": mayastor
-  image:
-    registry: ghcr.io/dzervas
+  csi:
+    node:
+      initContainers:
+        enabled: false
 
   etcd:
     image:
       # The 3.5.6 image used by the etcd version in the mayastor helm chart
       # is not available for arm64
       tag: 3.5-debian-12
+    volumePermissions:
+      image:
+        repository: bitnami/os-shell
 ```
