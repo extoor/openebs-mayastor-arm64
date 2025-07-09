@@ -38,29 +38,6 @@ jobs:
       - name: Build and push the release images
         run: ./scripts/release.sh --skip-publish
 
-      - name: Save images
-        run: |
-          images=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -v "<none>" | head -10 | sort -u)
-          mkdir -p openebs
-          for image in $images; do
-            echo "Exporting image '$image'"
-            docker save $image -o ${image//:}.tar
-          done
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: images-${{ matrix.runner }}
-          path: |
-            ./*.tar
-            ./openebs/*.tar
-
-  push-multiarch:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      # Do not define a name to download everything
-      - uses: actions/download-artifact@v4
-
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -68,20 +45,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Import built images
-        run: |
-          for image in $(ls openebs/); do
-            docker import $image
-          done
-
-      - name: Tag & Push produced images
+      - name: Push single-arch images
         run: |
           images=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -v "<none>" | head -10 | sort -u)
+          mkdir -p openebs
           for image in $images; do
-            [[ -z "$image" ]] && continue
-            new_tag="ghcr.io/${{ github.repository_owner }}/$image"
+            [[ "${{ matrix.runner }}" == *-arm ]] && arch="arm64" || arch="amd64"
+            new_tag="ghcr.io/${{ github.repository_owner }}/$image-$arch"
             echo "Pushing image '$image' to '$new_tag'"
             docker tag $image $new_tag
             docker push $new_tag
-            echo "Pushed '$new_tag'"
           done
