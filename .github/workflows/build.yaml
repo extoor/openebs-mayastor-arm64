@@ -1,0 +1,30 @@
+name: Build Multi-Arch Docker Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        required: true
+        default: "2.9.1"
+        description: The https://github.com/openebs/mayastor-extensions git tag to pull & build
+
+jobs:
+  docker:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: openebs/mayastor-extensions
+          ref: ${{ inputs.tag }}
+          submodules: 'recursive'
+          fetch-depth: 0
+      - run: |
+          # BUG: HEAD tag is fetched as lightweight instead of annotated
+          # https://github.com/actions/checkout/issues/290
+          if [ "${{ github.ref_type }}" == "tag" ]; then
+            git fetch -f origin ${{ github.ref }}:${{ github.ref }}
+          fi
+
+      - uses: cachix/install-nix-action@v31.3.0
+      - name: Build and push the release images
+        run: ./scripts/release.sh --skip-publish
