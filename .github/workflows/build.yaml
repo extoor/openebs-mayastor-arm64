@@ -41,6 +41,7 @@ jobs:
       - name: Save images
         run: |
           images=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -v "<none>" | head -10 | sort -u)
+          mkdir -p openebs
           for image in $images; do
             echo "Exporting image '$image'"
             docker save $image -o $image.tar
@@ -49,7 +50,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: images-${{ matrix.runner }}
-          path: ./*.tar
+          path: |
+            ./*.tar
+            ./openebs/*.tar
 
   push-multiarch:
     needs: build
