@@ -51,7 +51,9 @@ jobs:
 
       - uses: cachix/install-nix-action@v31.3.0
       - name: Build and push the release images
-        run: ./scripts/release.sh --skip-publish
+        # run: ./scripts/release.sh --registry "ghcr.io/${{ github.repository_owner }}"
+        run: ./scripts/release.sh --skip-publish --skip-bins
+
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -63,7 +65,7 @@ jobs:
       - name: Push single-arch images
         id: push-images
         run: |
-          images=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -v "<none>" | sort -u | tr '\n' ' ')
+          images=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "ghcr.io/${{ github.repository_owner }}" | sort -u | tr '\n' ' ')
           echo "images='$images'" >> "$GITHUB_OUTPUT"
           mkdir -p artifacts
           for image in $images; do
