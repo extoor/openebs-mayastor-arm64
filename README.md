@@ -24,23 +24,19 @@ are needed to achieve the following:
 Required values for the openebs helm chart:
 
 ```yaml
-nodeSelector: {}
-image:
-  registry: ghcr.io/dzervas
-
-csi:
-  image:
-    registry: ghcr.io/dzervas
-
 mayastor:
   nodeSelector: {}
   image:
     registry: ghcr.io/dzervas
+    repo: openebs
   io_engine:
     nodeSelector:
       # Keep only the engine nodeSelector and get rid of the arch
       "openebs.io/engine": mayastor
   csi:
+    image:
+      registry: ghcr.io/dzervas
+      repo: openebs
     node:
       initContainers:
         enabled: false
