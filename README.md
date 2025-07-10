@@ -8,6 +8,11 @@ especially of the openebs caliber. I'm using the exact same prcedures
 that openebs follow to build the images - I just do that on arm runners
 as well and merge the resulting images to a multi-arch image
 
+> [!NOTE]  
+> A minor patch is applied during the build of the mayastor repo on the arm runner
+>
+> For more see https://github.com/openebs/openebs/issues/3789#issuecomment-3056414733
+
 ## Usage
 
 In order to be able to run openebs/mayastor, a couple of helm values
