@@ -14,17 +14,18 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       # TODO: Also add the `mayastor` repo
-      matrix: |
-        {
-          "runner":[
-            "ubuntu-24.04",
-            "ubuntu-24.04-arm"
-          ],
-          "repo":[
-            "mayastor-extensions",
-            "mayastor-control-plane"
-          ]
-        }
+      matrix: '{"runner":["ubuntu-24.04-arm"],"repo":["mayastor"]}'
+      # matrix: |
+      #   {
+      #     "runner":[
+      #       "ubuntu-24.04",
+      #       "ubuntu-24.04-arm"
+      #     ],
+      #     "repo":[
+      #       "mayastor-extensions",
+      #       "mayastor-control-plane"
+      #     ]
+      #   }
     steps:
       - run: echo "Matrix setup complete"  # This step is required
 
@@ -50,6 +51,9 @@ jobs:
           fi
 
       - uses: cachix/install-nix-action@v31.3.0
+      - uses: valeriangalliat/action-sshd-cloudflared@v4
+        env:
+          AUTHORIZED_KEYS: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIB9rcx6pJF2ZEJsB5oFWF0E7LKOL5HQlA2uPdvDdafq dzervas
       - name: Build and push the release images
         # run: ./scripts/release.sh --registry "ghcr.io/${{ github.repository_owner }}"
         run: ./scripts/release.sh --skip-publish --skip-bins
