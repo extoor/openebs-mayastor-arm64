@@ -53,7 +53,7 @@ jobs:
       - uses: cachix/install-nix-action@v31.3.0
       - name: Patch mayastor on arm64 (add --with-crypto flag to spdk)
         run: sed -Ei 's/(armv8-a\+crypto")/\1 "--with-crypto"/' spdk-rs/build_scripts/build_spdk.sh
-        if: ${{ matrix.runner == "ubuntu-24.04-arm" && matrix.repo == "mayastor" }}
+        if: ${{ matrix.runner == 'ubuntu-24.04-arm' && matrix.repo == 'mayastor' }}
       - name: Build and push the release images
         # run: ./scripts/release.sh --registry "ghcr.io/${{ github.repository_owner }}"
         run: ./scripts/release.sh --skip-publish --skip-bins
